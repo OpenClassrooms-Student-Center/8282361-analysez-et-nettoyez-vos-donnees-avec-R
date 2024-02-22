@@ -1,0 +1,184 @@
+---
+title: "Import et vérification des données de températures"
+author: "Marie Vaugoyeau"
+date: "2024/01/01"
+format: 
+  pdf:
+    toc: true
+    number-sections: true
+editor: visual
+---
+
+# import des packages  
+  
+```{r}
+library(tidyverse)
+```
+
+# import des données  
+  
+```{r}
+
+donnees_temperature <- read_csv(
+  "donnees_temperature.csv",
+  col_types = "ffdDdddfddff"
+  )
+
+```
+
+# résumer
+
+```{r}
+glimpse(donnees_temperature)
+
+```
+  
+# valeurs manquantes
+
+```{r}
+
+naniar::gg_miss_upset(donnees_temperature)
+
+```
+
+# résumez les données sous forme de tableaux  
+```{r}
+summary(donnees_temperature)
+
+glimpse(donnees_temperature)
+```
+
+# création d'une colonne densite_habitant
+
+```{r}
+
+donnees_temperature <- donnees_temperature |> 
+  mutate(densite_humaine_par_km_carre = densite_par_millier_habitants_km_carre_en_2018 *  1000) |> 
+  select(- densite_par_millier_habitants_km_carre_en_2018)
+
+# vérification
+glimpse(donnees_temperature)
+
+donnees_temperature |> 
+  distinct(departement, densite_humaine_par_km_carre)
+
+```
+
+# création niveau densité de pop
+
+```{r}
+
+donnees_temperature <- donnees_temperature |> 
+  mutate(
+    densite_pop = case_when(
+      densite_humaine_par_km_carre > 20000000 ~ "sur-peuplé",
+      densite_humaine_par_km_carre > 5000000 ~ "très peuplé",
+      densite_humaine_par_km_carre > 50000 ~ "peuplé",
+      TRUE ~ "peu peuplé"
+    )
+  )
+
+
+count(donnees_temperature, departement, densite_pop)
+
+```  
+  
+# remplacement des valeurs manquantes
+
+## remplacement des longitudes
+
+### vérification que les villes ont toujours les mêmes coordonnées
+
+```{r}
+
+donnees_temperature |> 
+  filter(!is.na(longitude)) |> 
+  distinct(chef_lieu, longitude, latitude) |> 
+  count(chef_lieu) |> 
+  filter(n > 1)
+
+```
+
+### table ville - coordonnees
+
+```{r}
+table_ville_coordonnees <- donnees_temperature |> 
+  filter(!is.na(longitude)) |> 
+  distinct(chef_lieu, longitude, latitude)
+
+# jointure pour créer la nouvelle colonne corrigée
+donnees_temperature_longitude_corr <- 
+  inner_join(
+    donnees_temperature,
+    table_ville_coordonnees,
+    by = join_by(chef_lieu, latitude),
+    suffix = c(".origine", ".corrige")
+  )
+
+# vérification de la correction
+donnees_temperature_longitude_corr |> 
+  filter(is.na(longitude.origine))
+
+# suppression de la colonne d'origine et renome la colonne corrigée
+donnees_temperature <- donnees_temperature_longitude_corr |> 
+  select(- longitude.origine) |> 
+  rename(longitude = "longitude.corrige")
+
+# vérification
+naniar::gg_miss_upset(donnees_temperature)
+
+```
+
+
+## remplacement des températures manquantes
+
+### tmoy
+
+```{r}
+# tri sur les données pour avoir les jour qui se suivent dans chaque departement
+donnees_temperature <- arrange(donnees_temperature, departement, date_obs)
+
+# recherche du numéro de ligne pour laquelle la température moyenne est manquante
+num_ligne <- donnees_temperature |> 
+  rowid_to_column() |> 
+  filter(is.na(tmoy))
+
+donnees_temperature[num_ligne$rowid, "tmoy"] <- mean(
+  donnees_temperature[(num_ligne$rowid - 1),]$tmoy, donnees_temperature[(num_ligne$rowid + 1), ]$tmoy
+)
+
+
+# vérification
+donnees_temperature |> 
+  filter(is.na(tmoy))
+```
+
+### tmin
+
+```{r}
+# utilisation de lag() et lead()
+donnees_temperature <- donnees_temperature |> 
+  mutate(
+    tmin = case_when(
+      is.na(tmin) ~ (lag(tmin) + lead(tmin))/2,
+      TRUE ~ tmin
+    )
+  )
+    
+# vérification
+summary(donnees_temperature)
+
+```
+
+# Jeu de données sans valeurs manquantes
+
+```{r}
+write_csv(
+  donnees_temperature, 
+  "donnees_temperature_completees.csv"
+  )
+
+```
+  
+
+

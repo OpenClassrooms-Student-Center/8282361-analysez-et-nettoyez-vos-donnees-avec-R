@@ -1,0 +1,44 @@
+---
+title: "Import et vérification des données de températures"
+author: "Marie Vaugoyeau"
+date: "2024/01/01"
+format: 
+  pdf:
+    toc: true
+    number-sections: true
+editor: visual
+---
+
+# import des packages  
+  
+```{r}
+library(tidyverse)
+```
+
+# import des données  
+  
+```{r}
+
+donnees_temperature <- read_csv(
+  "donnees_temperature.csv",
+  col_types = "ffdDdddfddff"
+  )
+
+```
+
+# résumer
+
+```{r}
+glimpse(donnees_temperature)
+
+```
+  
+# valeurs manquantes
+
+```{r}
+
+naniar::gg_miss_upset(donnees_temperature)
+
+```
+
+
