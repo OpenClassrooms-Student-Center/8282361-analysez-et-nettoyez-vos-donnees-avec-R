@@ -1,0 +1,434 @@
+---
+title: "Analyse descriptive univariée"
+author: "Marie Vaugoyeau"
+date: "2024/01/21"
+format: 
+  pdf:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+editor: visual
+---
+
+# introduction  
+## import des packages  
+```{r}
+library(tidyverse)
+library(sf)
+library(leaflet)
+```
+
+## import des données 
+```{r}
+
+donnees_temperature <- read_csv(
+  "data/donnees_temperature_mois_rajoutes.csv",
+  col_types = c("fDfnnnfnnffnf")
+  )
+
+summary(donnees_temperature)
+```
+
+# analyse descriptive univariée
+## variables quantitatives  
+#### une par une
+
+```{r}
+# calcul pour une variable
+mean(donnees_temperature$tmin)
+median(donnees_temperature$tmin)
+max(donnees_temperature$tmin) - min(donnees_temperature$tmin)
+sd(donnees_temperature$tmin)
+var(donnees_temperature$tmin)
+quartiles <- quantile(donnees_temperature$tmin)
+
+# détection des valeurs extrêmes
+donnees_temperature |> 
+  filter(tmin < (quartiles[2] - 1.5*(quartiles[4] - quartiles[2])))
+
+donnees_temperature |> 
+  filter(tmin > (quartiles[4] + 1.5*(quartiles[4] - quartiles[2])))
+
+```
+
+#### pour toutes
+
+```{r}
+summary(donnees_temperature)
+
+donnees_temperature |> 
+  summarise(
+    across(
+      .cols = where(is.numeric),
+      .fns = list(
+        etendu = ~ max(.x) - min(.x), 
+        ecart_type = sd,
+        variance = var
+        ),
+      .names = "{col} {fn}"
+    )
+  ) |> 
+  pivot_longer(
+    everything(),
+    cols_vary = "slowest",
+    names_to = c("mesure", ".value"),
+    names_pattern = "(.+) (.+)"
+  )
+
+# réalisation d'un tableau plus complet ?
+donnees_temperature |> 
+  summarise(
+    across(
+      .cols = c(tmin:tmoy, densite_humaine_par_km_carre),
+      .fns = list(
+        moyenne = mean,
+        mediane = median,
+        minimum = min,
+        maximum = max,
+        etendu = ~ max(.x) - min(.x), 
+        ecart_type = sd,
+        variance = var
+        ),
+      .names = "{col} {fn}"
+    )
+  ) |> 
+  pivot_longer(
+    everything(),
+    cols_vary = "slowest",
+    names_to = c("mesure", ".value"),
+    names_pattern = "(.+) (.+)"
+  )
+
+```
+
+### représentation graphique des variables quantitatives
+
+#### une par une
+
+```{r}
+ggplot(donnees_temperature) + # chois du jeu de données
+  aes(x = tmin) + # choix de la variable à représenter
+  geom_histogram() + # choix du type de graphique
+  theme_classic() # choix d'un thème pour la représentation graphique
+
+```
+
+#### pour toutes les variables
+
+```{r}
+donnees_temperature |> 
+  select(tmin:tmoy, densite_humaine_par_km_carre) |> 
+  pivot_longer(
+    everything(),
+    names_to = "mesure",
+    values_to = "valeur"
+  ) |> 
+  ggplot() +
+  aes(x = valeur) +
+  geom_histogram() +
+  facet_wrap(~ mesure, scales = "free") +
+  theme_bw()
+
+# boites à moustaches
+donnees_temperature |> 
+  select(tmin:tmoy) |> 
+  pivot_longer(
+    everything(),
+    names_to = "mesure",
+    values_to = "valeur"
+  ) |> 
+  ggplot() +
+  aes(x = valeur, y = mesure, color = mesure) +
+  geom_boxplot() +
+  theme_bw()
+
+```
+
+
+## variables qualitatives  
+### analyse univariée qualitative  
+#### vérification de l'unicité des modalités  
+  
+```{r}
+# visualiser la table  
+donnees_temperature |> 
+  distinct(
+    code_insee_departement,
+    departement,
+    chef_lieu,
+    region,
+    continent
+  ) |> 
+  View()
+
+# verifier l'unicite
+donnees_temperature |> 
+  distinct(
+    code_insee_departement,
+    departement,
+    chef_lieu,
+    region,
+    continent
+  ) |> 
+  count(departement) |> 
+  filter(n == 1)
+```
+
+#### nombre de régions
+
+```{r}
+distinct(donnees_temperature, region)
+```
+
+#### verification que la Corse soit la seule hors continent
+
+```{r}
+donnees_temperature |> 
+  distinct(region, continent) |> 
+  count(continent)
+
+```
+
+#### Visualiser l'ordre des modalités
+
+```{r}
+# visualisation des modalités de la variable region
+fct_unique(donnees_temperature$region)
+
+# visualisation des modalités de la variable departement
+fct_unique(donnees_temperature$departement)
+
+# visualisation des modalités de la variable code_insee_departement
+fct_unique(donnees_temperature$code_insee_departement)
+```
+
+#### Réordonner la région selon l'ordre alphabétique
+
+```{r}
+# réordonne les modalités des variables département, region et code_insee_departement
+donnees_temperature <- donnees_temperature |> 
+  mutate(
+    departement = fct_relevel(donnees_temperature$departement, sort),
+    region = fct_relevel(donnees_temperature$region, sort),
+    code_insee_departement = fct_inseq(donnees_temperature$code_insee_departement)
+  )
+
+# vérification
+fct_unique(donnees_temperature$departement)
+fct_unique(donnees_temperature$region)
+fct_unique(donnees_temperature$code_insee_departement)
+
+```
+
+### représentation graphique des variables qualitatives
+
+#### Tableaux
+
+```{r}
+# selon les départements
+count(donnees_temperature, departement)
+
+# selon les régions
+count(donnees_temperature, region)
+
+
+```
+
+#### Graphiques
+
+```{r}
+# diagramme en barres
+## initial
+ggplot(donnees_temperature) + 
+  aes(x = region) + 
+  geom_bar() +
+  theme_classic()
+
+## titres des modalités à la verticale
+ggplot(donnees_temperature) + 
+  aes(x = region) + 
+  geom_bar() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90))
+
+## trie selon l'occurrence
+ggplot(donnees_temperature) + 
+  aes(x = fct_infreq(region)) + 
+  geom_bar() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+donnees_temperature |> 
+  distinct(departement, region) |> 
+  count(region)
+
+```
+
+```{r}
+# diagramme cirulaire
+donnees_temperature |> 
+  count(continent) |> 
+  ggplot() +
+  aes(x = "", y = n, fill = continent) +
+  geom_bar(stat = "identity") +
+  coord_polar("y") +
+  scale_fill_manual(values = c("oui" = "blue", "non" = "yellow")) +
+  theme_void() 
+
+```
+  
+## variables temporelles    
+#### Création des colonnes `mois` et `annee`
+
+```{r}
+# vérification que les dates soient bien des dates
+glimpse(donnees_temperature)
+class(donnees_temperature$date_obs)
+
+# création des colonnes mois et année
+donnees_temperature <- donnees_temperature_partie_2 |> 
+  mutate(
+    mois = month(date_obs, abbr = FALSE, label = TRUE),
+    annee = year(date_obs)
+  )
+```
+
+#### Représenter les données
+
+```{r}
+donnees_temperature |> 
+  count(mois, annee) |> 
+  ggplot() +
+  aes(x = mois, y = annee, fill = n) +
+  geom_tile() +
+  theme_classic()
+
+```
+
+
+## variables spatiales  
+### correction des données géographiques
+
+```{r}
+chef_lieu_coord_corr <- donnees_temperature |>
+  distinct(chef_lieu, longitude, latitude) |> 
+  mutate(
+    longitude = 
+      case_when(
+        chef_lieu == "Moulins" ~ 3.334417,
+        chef_lieu == "Valence" ~ 4.89236,
+        TRUE ~ longitude
+      ),
+    latitude = 
+      case_when(
+        chef_lieu == "Moulins" ~ 46.568059,
+        chef_lieu == "Valence" ~ 44.933393,
+        TRUE ~ latitude
+      )
+  )
+
+# vérification avec `{ggplot2}`
+departement <- st_read(
+  dsn = "data/departement",
+  layer = "DEPARTEMENT",
+  quiet = TRUE
+  ) |>
+  st_transform()
+  
+ggplot(departement) +
+  aes(fill = INSEE_REG) +
+  geom_sf() +
+  geom_sf(
+    data = 
+      chef_lieu_coord_corr |> 
+      st_as_sf(
+        coords = c("longitude", "latitude"),
+        crs = 'EPSG:4326'
+      ), 
+    fill = "black", 
+    color  = "black"
+  ) +
+  coord_sf(crs = 4326) +
+  theme(legend.position = "none") +
+  theme_classic()
+
+donnees_temperature_corr <- 
+  inner_join(
+    donnees_temperature |> 
+      select(- longitude, - latitude),
+    chef_lieu_coord_corr
+  )
+```
+
+### analyse univariée spatiale  
+
+```{r}
+# Vérification que les couples de coordonnées sont uniques pour un chef-lieu
+donnees_temperature |>
+  distinct(chef_lieu, longitude, latitude) |>
+  count(chef_lieu) |>
+  filter(n != 1)
+
+# transformation des données en coordonnées géographiques
+chef_lieu_coord_geo <- donnees_temperature |>
+  distinct(chef_lieu, longitude, latitude) |>
+  st_as_sf(
+    coords = c("longitude", "latitude"),
+    crs = 'EPSG:4326'
+    )
+
+```
+
+### représentation graphique des variables spatiales
+
+#### leaflet
+
+```{r}
+#| label: leaflet
+#| eval: false
+
+
+donnees_temperature |> 
+  distinct(chef_lieu, latitude, longitude, region) |> 
+  leaflet() |> 
+  addTiles() |> 
+  addMarkers(
+    lng = ~ longitude,
+    lat = ~ latitude,
+    label = ~ chef_lieu
+  )
+
+
+
+```
+
+#### visualisation des chefs-lieux avec ggplot2
+
+```{r}
+departement <- st_read(
+  dsn = "data/departement",
+  layer = "DEPARTEMENT",
+  quiet = TRUE
+  ) |>
+  st_transform()
+
+
+ggplot(departement) +
+  aes(fill = INSEE_REG) +
+  geom_sf() +
+  geom_sf(data = chef_lieu_coord_geo, fill = "black", color  = "black") +
+  coord_sf(crs = 4326) +
+  theme_classic()
+
+```
+
+### enregistrement des données corrigés  
+```{r}
+write_csv(
+  donnees_temperature_corr,
+  "donnees_temperature_corrigees.csv"
+)
+
+```
+

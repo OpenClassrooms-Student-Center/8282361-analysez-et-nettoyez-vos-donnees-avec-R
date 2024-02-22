@@ -1,0 +1,153 @@
+---
+title: "Analyse descriptive univariée"
+author: "Marie Vaugoyeau"
+date: "2024/01/21"
+format: 
+  pdf:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+editor: visual
+---
+
+# introduction  
+## import des packages  
+```{r}
+library(tidyverse)
+library(sf)
+library(leaflet)
+```
+
+## import des données 
+```{r}
+
+donnees_temperature <- read_csv(
+  "donnees_temperature_completees.csv",
+  col_types = c("ffDnnnfnffnfn")
+  )
+
+summary(donnees_temperature)
+```
+
+# analyse descriptive univariée
+## variables quantitatives  
+#### une par une
+
+```{r}
+# calcul pour une variable
+mean(donnees_temperature$tmin)
+median(donnees_temperature$tmin)
+max(donnees_temperature$tmin) - min(donnees_temperature$tmin)
+sd(donnees_temperature$tmin)
+var(donnees_temperature$tmin)
+quartiles <- quantile(donnees_temperature$tmin)
+
+# détection des valeurs extrêmes
+donnees_temperature |> 
+  filter(tmin < (quartiles[2] - 1.5*(quartiles[4] - quartiles[2])))
+
+donnees_temperature |> 
+  filter(tmin > (quartiles[4] + 1.5*(quartiles[4] - quartiles[2])))
+
+```
+
+#### pour toutes
+
+```{r}
+summary(donnees_temperature)
+
+donnees_temperature |> 
+  summarise(
+    across(
+      .cols = where(is.numeric),
+      .fns = list(
+        etendu = ~ max(.x) - min(.x), 
+        ecart_type = sd,
+        variance = var
+        ),
+      .names = "{col} {fn}"
+    )
+  ) |> 
+  pivot_longer(
+    everything(),
+    cols_vary = "slowest",
+    names_to = c("mesure", ".value"),
+    names_pattern = "(.+) (.+)"
+  )
+
+# réalisation d'un tableau plus complet ?
+donnees_temperature |> 
+  summarise(
+    across(
+      .cols = c(tmin:tmoy, densite_humaine_par_km_carre),
+      .fns = list(
+        moyenne = mean,
+        mediane = median,
+        minimum = min,
+        maximum = max,
+        etendu = ~ max(.x) - min(.x), 
+        ecart_type = sd,
+        variance = var
+        ),
+      .names = "{col} {fn}"
+    )
+  ) |> 
+  pivot_longer(
+    everything(),
+    cols_vary = "slowest",
+    names_to = c("mesure", ".value"),
+    names_pattern = "(.+) (.+)"
+  )
+
+```
+
+### représentation graphique des variables quantitatives
+
+#### une par une
+
+```{r}
+ggplot(donnees_temperature) + # chois du jeu de données
+  aes(x = tmin) + # choix de la variable à représenter
+  geom_histogram() + # choix du type de graphique
+  theme_classic() # choix d'un thème pour la représentation graphique
+
+```
+
+#### pour toutes les variables
+
+```{r}
+donnees_temperature |> 
+  select(tmin:tmoy, densite_humaine_par_km_carre) |> 
+  pivot_longer(
+    everything(),
+    names_to = "mesure",
+    values_to = "valeur"
+  ) |> 
+  ggplot() +
+  aes(x = valeur) +
+  geom_histogram() +
+  facet_wrap(~ mesure, scales = "free") +
+  theme_bw()
+
+# boites à moustaches
+donnees_temperature |> 
+  select(tmin:tmoy) |> 
+  pivot_longer(
+    everything(),
+    names_to = "mesure",
+    values_to = "valeur"
+  ) |> 
+  ggplot() +
+  aes(x = valeur, y = mesure, color = mesure) +
+  geom_boxplot() +
+  theme_bw()
+
+```
+
+
+## variables qualitatives  
+
+## variables temporelles    
+
+## variables spatiales
+

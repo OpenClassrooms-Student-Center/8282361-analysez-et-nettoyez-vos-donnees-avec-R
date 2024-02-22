@@ -1,0 +1,40 @@
+---
+title: "Analyse descriptive univariée"
+author: "Marie Vaugoyeau"
+date: "2024/01/21"
+format: 
+  pdf:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+editor: visual
+---
+
+# introduction  
+## import des packages  
+```{r}
+library(tidyverse)
+library(sf)
+library(leaflet)
+```
+
+## import des données 
+```{r}
+
+donnees_temperature <- read_csv(
+  "donnees_temperature_completees.csv",
+  col_types = c("ffDnnnfnffnfn")
+  )
+
+summary(donnees_temperature)
+```
+
+# analyse descriptive univariée
+## variables quantitatives  
+
+## variables qualitatives  
+
+## variables temporelles    
+
+## variables spatiales
+
