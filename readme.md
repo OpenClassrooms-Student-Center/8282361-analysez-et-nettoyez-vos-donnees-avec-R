@@ -6,7 +6,7 @@ Ce repo contient le code pour le cours [OpenClassRoom - Analysez et nettoyez vos
 
 ### P1C2 - Analysez les besoins  
 Le premier blueprint de la partie `présentez le blueprint pour validation` est dispo dans le dossier doc sous le nom [`blueprint.xlsx`](doc/blueprint.xlsx)  
-La version corrigée du blueprint de `A vous de jouez` est dispo au même endroit sous le nom [`blueprint.doc`](doc/blueprint.docx)  
+La version corrigée du blueprint de `A vous de jouez` est dispo au même endroit sous le nom [`blueprint.pdf`](doc/blueprint.pdf)  
 
 ### P1C3 - Construisez votre script de vérification  
 Données du `A vous de jouez` [`donnees_temperature.csv`](data/donnees_temperature.csv)  
@@ -25,7 +25,7 @@ Script Quarto corrigé du `A vous de jouez` [`03_analyse_descriptive_univariee.q
 Script Quarto corrigé du `A vous de jouez` [`04_analyse_descriptive_univariee_quanti.qmd`](04_analyse_descriptive_univariee_quanti.qmd)  
   
 ### P2C3 - Résumez des variables qualitatives   
-Blueprint corrigé disponible dans le dossier `doc` sous le nom [`blueprint_v2.docx`](doc/blueprint_v2.docx)  
+Blueprint corrigé disponible dans le dossier `doc` sous le nom [`blueprint_v2.pdf`](doc/blueprint_v2.pdf)  
 Script Quarto corrigé du `A vous de jouez` [`05_analyse_descriptive_univariee_quali.qmd`](05_analyse_descriptive_univariee_quali.qmd)  
   
 ### P2C4 - Ajoutez une dimension temporelle à vos données  
