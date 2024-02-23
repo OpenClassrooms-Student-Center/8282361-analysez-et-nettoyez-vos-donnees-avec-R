@@ -320,8 +320,8 @@ ggplot(departement_quanti) +
   geom_sf() +
   coord_sf(crs = 4326) +
   facet_wrap(~ mois) +
-  # theme(legend.position = "none") +
-  theme_classic()
+  theme_void()
+  
 
 
 

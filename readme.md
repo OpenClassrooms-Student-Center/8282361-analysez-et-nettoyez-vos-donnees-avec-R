@@ -50,6 +50,9 @@ Le script Quarto corrigé est disponible sous le nom [`10_analyse_descriptive_bi
   
 ### P3C4 - Menez une analyse de variation spatio-temporelle  
 Le script Quarto corrigé est disponible sous le nom [`11_analyse_descriptive_bivariee_spatio_temp.qmd`](11_analyse_descriptive_bivariee_spatio_temp.qmd)  
+  
+### P3C5 - Confrontez votre analyse de données finale avec le blueprint client  
+Le script Quarto corrigé est disponible sous le nom [`12_presentation_donnees_temperature.qmd`](12_presentation_donnees_temperature.qmd)  
 
 
 

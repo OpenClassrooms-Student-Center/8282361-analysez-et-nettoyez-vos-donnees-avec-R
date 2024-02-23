@@ -21,9 +21,6 @@ Le jeu de données est disponible sur la page du cours d'OC.
 ```{r}
 library(multcomp)
 library(tidyverse)
-library(fmsb)
-library(sf)
-library(leaflet)
 ```
 
 ## import des données
@@ -48,8 +45,10 @@ summary(donnees_temperature)
 
 # analyse descriptive bivariée
 
-## quanti - quanti 
+## quanti - quanti
+
 ### tmin et tmoy
+
 ```{r}
 # représentation graphique  
 donnees_temperature |> 
@@ -84,8 +83,9 @@ donnees_temperature |>
   theme_classic()
 
 ```
-  
-### tmin et max  
+
+### tmin et max
+
 ```{r}
 # représentation graphique  
 donnees_temperature |> 
@@ -110,9 +110,11 @@ donnees_temperature |>
   ggpubr::stat_regline_equation() +
   theme_classic()
 ```
-Oui la température maximale est liée à la température minimale selon l'équation : tmax ~ `r regression_lineaire$coefficients[2]` * tmin + `r regression_lineaire$coefficients[1]`  
-  
-### tmin et densité de population  
+
+Oui la température maximale est liée à la température minimale selon l'équation : tmax \~ `r regression_lineaire$coefficients[2]` \* tmin + `r regression_lineaire$coefficients[1]`
+
+### tmin et densité de population
+
 ```{r}
 # représentation graphique  
 donnees_temperature |> 
@@ -121,9 +123,11 @@ donnees_temperature |>
   geom_point(alpha  = 0.2, size = 0.2) +
   theme_classic()
 ```
-Il n'y a pas de lien visible à cause des points extrêmes en densité mais aussi à cause de la variation des températures minimales toutes l'année.  
 
-## quali - quali  
+Il n'y a pas de lien visible à cause des points extrêmes en densité mais aussi à cause de la variation des températures minimales toutes l'année.
+
+## quali - quali
+
 ### tableau de contingence
 
 ```{r}
@@ -151,7 +155,7 @@ donnees_temperature_province |>
 
 ```
 
-### test du khi-deux  
+### test du khi-deux
 
 ```{r}
 table(donnees_temperature_province$region, donnees_temperature_province$densite_pop) |> 
@@ -159,11 +163,13 @@ table(donnees_temperature_province$region, donnees_temperature_province$densite_
   
 ```
 
-Les régions de province n'ont pas la même distribution de densité de population.  
-Au moins une des régions est différentes des autres.  
-  
+Les régions de province n'ont pas la même distribution de densité de population.\
+Au moins une des régions est différentes des autres.
+
 ## quanti - quali
-### tmin et densité de pop  
+
+### tmin et densité de pop
+
 #### représentation graphique
 
 ```{r}
@@ -228,7 +234,8 @@ PMCMRplus::kwAllPairsNemenyiTest(
 
 ```
 
-### tmoy et densité de pop  
+### tmoy et densité de pop
+
 #### représentation graphique
 
 ```{r}
@@ -246,8 +253,9 @@ donnees_temperature |>
 bartlett.test(tmoy ~ densite_pop, data = donnees_temperature)
 
 ```
-Les variances ne sont pas similaires donc on ne peut pas réaliser d'ANOVA  
-  
+
+Les variances ne sont pas similaires donc on ne peut pas réaliser d'ANOVA
+
 ### Kruskal-Wallis
 
 ```{r}
@@ -260,10 +268,12 @@ PMCMRplus::kwAllPairsNemenyiTest(
 )
 
 ```
-Les températures minimales sont similaires entre les zones peu peuplé et très peuplé, ces températures sont inférieurs aux températures mesurées dans les zones peuplé et sur-peuplé, qui sont similaires entre elles.  
-  
-### tmax et densité de pop  
-#### représentation graphique  
+
+Les températures minimales sont similaires entre les zones peu peuplé et très peuplé, ces températures sont inférieurs aux températures mesurées dans les zones peuplé et sur-peuplé, qui sont similaires entre elles.
+
+### tmax et densité de pop
+
+#### représentation graphique
 
 ```{r}
 donnees_temperature |> 
@@ -280,8 +290,9 @@ donnees_temperature |>
 bartlett.test(tmax ~ densite_pop, data = donnees_temperature)
 
 ```
-Pas non plus d'ANOVA autorisez ici car les variances ne sont pas identiques.  
-  
+
+Pas non plus d'ANOVA autorisez ici car les variances ne sont pas identiques.
+
 ### Kruskal-Wallis
 
 ```{r}
@@ -292,6 +303,6 @@ kruskal.test(
 PMCMRplus::kwAllPairsNemenyiTest(
   tmax ~ densite_pop, data = donnees_temperature
 )
-```  
-  
-Les températures max enregistrées en zone peu peuplé sont significativement plus haute que celle enregistrées dans toutes les autres zones. Les températures enregistré en zones sur-peuplé sont similaires à celles enregistrées en zone peuplé et très peuplé. Les températures sont significativement plus haute en zone peuplé que qu'en zone très peuplé.   
+```
+
+Les températures max enregistrées en zone peu peuplé sont significativement plus haute que celle enregistrées dans toutes les autres zones. Les températures enregistré en zones sur-peuplé sont similaires à celles enregistrées en zone peuplé et très peuplé. Les températures sont significativement plus haute en zone peuplé que qu'en zone très peuplé.

@@ -1,0 +1,300 @@
+---
+title: "Analyse de données sur les températures par départements"
+author: "Marie VAUGOYEAU"  
+date: "2024/02/19"
+format: 
+  revealjs:
+    incremental: true
+    footer: "A tout chemin"
+    toc: true
+    scrollable: true
+    code-fold: true
+    message: false
+    warning: false
+  pdf:
+    toc: true
+    lof: true
+    message: false
+    warning: false
+    echo: false
+    number-sections: true
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(sf)
+
+donnees_temperature <- read_csv(
+  "data/donnees_temperature_corrigees.csv",
+  col_types = c("fDfnnnfffnffnnn")
+  )
+
+# réordonne les modalités des variables département, region et code_insee_departement
+donnees_temperature <- donnees_temperature |> 
+  mutate(
+    departement = fct_relevel(donnees_temperature$departement, sort),
+    region = fct_relevel(donnees_temperature$region, sort),
+    code_insee_departement = fct_inseq(donnees_temperature$code_insee_departement)
+  )
+```
+
+## Présentation des données  
+Le jeu de données est composé de `r nrow(donnees_temperature)` lignes et `r ncol(donnees_temperature)` colonnes.  
+  
+Voici un aperçu de la table.  
+```{r}
+glimpse(donnees_temperature)
+```
+
+## Modification du jeu de données  
+
+- Il a été nécessaire de transformer la colonne `densite_humaine_par_km_carre` pour ne plus avoir un millier d'habitants.  
+- La colonne `densite_pop` a été créée à partir de la colonne `densite_humaine_par_km_carre` avec les règles suivantes :  
+  - `sur-peuplé` pour une densité supérieure à 20 000 000 habitants au km²  
+  - `très peuplé` pour une densité entre  20 000 000 et 5 000 000 habitants au km²  
+  - `peuplé` pour une densité entre  5 000 000 et 50 000 habitants au km²  
+  - `peu peuplé` pour une densité en dessous de 50 000 habitants par km²  
+- Création des colonnes `mois` et `annee` à partir de la `date_obs`  
+  
+```{r}
+donnees_temperature |> 
+  count(mois, annee) |> 
+  ggplot() +
+  aes(x = mois, y = annee, fill = n) +
+  geom_tile() +
+  theme_classic()
+```
+  
+- Les données de **température manquantes** ont été remplacées par les moyennes des températures de la veille et du lendemain pour le même département et le même type de données.  
+- Les **données manquantes** de la **longitude** ont été remplacés par la **valeur exacte**. Les **données de longitude et latitude erronées** ont été corrigées grâce à internet.  
+  
+## Statistiques descriptive univariée  
+### Variables quantitatives  
+```{r}
+
+donnees_temperature |> 
+  select(tmin:tmoy, densite_humaine_par_km_carre) |> 
+  summary()
+
+donnees_temperature |> 
+  select(tmin:tmoy, densite_humaine_par_km_carre) |> 
+  pivot_longer(
+    everything(),
+    names_to = "mesure",
+    values_to = "valeur"
+  ) |> 
+  ggplot() +
+  aes(x = valeur) +
+  geom_histogram() +
+  facet_wrap(~ mesure, scales = "free") +
+  theme_bw()
+
+```
+
+La **densité humaine** a clairement un **distribution asymétrique** avec beaucoup de petites données et quelques grandes valeurs (médiane <<< moyenne).  
+  
+Les données de **températures** ont globalement une **distribution symétrique en cloche** représentatif d'une loi normale.  
+La température moyenne semble avoir deux courbes en cloches croisées, possiblement dû aux saisons.  
+  
+```{r}
+donnees_temperature |>
+  arrange(date_obs) |> 
+  ggplot() +
+  aes(x = tmoy, color = fct_inorder(mois)) +
+  geom_density() +
+  labs(color = "mois") +
+  theme_classic()
+  
+```
+
+### Variables quantitatives  
+La plus part des variables quantitatives sont liées. En effet, un département à toujours le même `code_insee_departement`, le même nom `departement`, le même  `chef_lieu`, fait partie de la même `region` et appartient ou non au `continent`.  
+  
+Il y a `r nrow(count(donnees_temperature, departement))` départements -> pas de département hors de la France métropole excepté la Corse.  
+  
+```{r}
+departement <- st_read(
+  dsn = "data/departement",
+  layer = "DEPARTEMENT",
+  quiet = TRUE
+  ) |>
+  st_transform()
+
+chef_lieu_coord_geo <- donnees_temperature |>
+  distinct(chef_lieu, longitude, latitude) |>
+  st_as_sf(
+    coords = c("longitude", "latitude"),
+    crs = 'EPSG:4326'
+    )
+
+ggplot(departement) +
+  aes(fill = INSEE_REG) +
+  geom_sf() +
+  geom_sf(data = chef_lieu_coord_geo, fill = "black", color  = "black") +
+  coord_sf(crs = 4326) +
+  theme(legend.position = "none") +
+  theme_void()
+
+```
+  
+Il y a `r nrow(count(donnees_temperature, region))` régions qui n'ont pas le même nombre de départements.   
+```{r}
+ggplot(donnees_temperature) + 
+  aes(x = fct_infreq(region)) + 
+  geom_bar() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90))
+
+```
+
+La variable `continent` n'est pas très intéressante :  
+```{r}
+donnees_temperature |> 
+  count(continent) |> 
+  ggplot() +
+  aes(x = "", y = n, fill = continent) +
+  geom_bar(stat = "identity") +
+  coord_polar("y") +
+  scale_fill_manual(values = c("oui" = "blue", "non" = "yellow")) +
+  theme_void() 
+
+```
+
+## Sorties demandées  
+### Chloroplèthe fixe avec la température moyenne par mois  
+```{r}
+
+departement_quanti <- 
+  st_read(
+  dsn = "data/departement",
+  layer = "DEPARTEMENT"
+  ) |>
+  inner_join(
+    donnees_temperature |> 
+      group_by(
+        departement,
+        mois) |> 
+      summarise(
+        temperature_moyenne = mean(tmoy)
+      ),
+    by = c("NOM" = "departement")
+  ) |> 
+  st_transform(crs = '+proj=longlat +datum=WGS84')
+
+ggplot(departement_quanti) +
+  aes(fill = temperature_moyenne) +
+  geom_sf() +
+  coord_sf(crs = 4326) +
+  facet_wrap(~ mois) +
+  theme_void()
+  
+```
+  
+### Courbe des températures moyennes du mois en cours encadré par min et max extrême  
+Exemple pour le `Maine et Loire` au mois de `mai`  
+```{r}
+temperature_dpt_moi <- donnees_temperature |> 
+  group_by(departement, mois, jour = date_obs |> day()) |> 
+  summarise(
+    temperature_moyenne = mean(tmoy),
+    temperature_minimale = min(tmin),
+    temperature_maximale = max(tmax)
+  ) 
+
+temperature_dpt_moi |> 
+  filter(
+    departement == "Maine-et-Loire",
+    mois == "mai"
+    ) |> 
+  ggplot() +
+  aes(x = jour, y = temperature_moyenne) +
+  geom_smooth(color = "black", se = FALSE) +
+  geom_smooth(aes(y = temperature_minimale), color = "blue", se = FALSE) +
+  geom_smooth(aes(y = temperature_maximale), color = "red", se = FALSE) +
+  ggtitle("Maine et Loire (mai)") +
+  ylab("Température") +
+  theme_bw()
+
+```
+
+### Evolution historique des températures de proximité  
+Exemple pour le `Maine et Loire`   
+```{r}
+donnees_temperature |> 
+  filter(departement == "Maine-et-Loire") |> 
+  ggplot() +
+  aes(x = date_obs, y = tmoy) +
+  geom_smooth(color = "black") +
+  geom_smooth(aes(y = tmin), color = "blue") +
+  geom_smooth(aes(y = tmax), color = "red") +
+  ggtitle("Maine et Loire") +
+  ylab("Température") +
+  xlab("année") +
+  theme_bw()
+
+```
+
+### Lien entre les températures et les densités de populations  
+```{r}
+donnees_temperature |> 
+  ggplot() +
+  aes(x = densite_pop, y = tmin, color = densite_pop) +
+  geom_boxplot() +
+  geom_text(
+    aes(
+      y = 30,
+      label = label),
+    data = tibble(
+      densite_pop = donnees_temperature$densite_pop |> fct_unique(),
+      label = c("a", "b", "b", "c")
+    )
+  ) +
+  theme_classic()
+
+donnees_temperature |> 
+  ggplot() +
+  aes(x = densite_pop, y = tmoy, color = densite_pop) +
+  geom_boxplot() +
+  geom_text(
+    aes(
+      y = 35,
+      label = label),
+    data = tibble(
+      densite_pop = donnees_temperature$densite_pop |> fct_unique(),
+      label = c("a", "b", "a", "b")
+    )
+  ) +
+  theme_classic()
+
+donnees_temperature |> 
+  ggplot() +
+  aes(x = densite_pop, y = tmax, color = densite_pop) +
+  geom_boxplot() +
+  geom_text(
+    aes(
+      y = 45,
+      label = label),
+    data = tibble(
+      densite_pop = donnees_temperature$densite_pop |> fct_unique(),
+      label = c("c", "b", "a", "ab")
+    )
+  ) +
+  theme_classic()
+
+```
+  
+### La densité de la population en fonction des régions  
+```{r}
+donnees_temperature |> 
+  count(region, densite_pop) |> 
+  ggplot() +
+  aes(x = densite_pop, y = region, fill = n) +
+  geom_tile() +
+  theme_classic()
+
+```
+
+## La suite ?  
+C'est à vous de voir !  
+  

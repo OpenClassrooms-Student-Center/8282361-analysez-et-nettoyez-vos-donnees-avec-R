@@ -21,9 +21,6 @@ Le jeu de données est disponible sur la page du cours d'OC.
 ```{r}
 library(multcomp)
 library(tidyverse)
-library(fmsb)
-library(sf)
-library(leaflet)
 ```
 
 ## import des données
@@ -48,8 +45,10 @@ summary(donnees_temperature)
 
 # analyse descriptive bivariée
 
-## quanti - quanti 
+## quanti - quanti
+
 ### tmin et tmoy
+
 ```{r}
 # représentation graphique  
 donnees_temperature |> 
@@ -84,8 +83,9 @@ donnees_temperature |>
   theme_classic()
 
 ```
-  
-### tmin et max  
+
+### tmin et max
+
 ```{r}
 # représentation graphique  
 donnees_temperature |> 
@@ -110,9 +110,11 @@ donnees_temperature |>
   ggpubr::stat_regline_equation() +
   theme_classic()
 ```
-Oui la température maximale est liée à la température minimale selon l'équation : tmax ~ `r regression_lineaire$coefficients[2]` * tmin + `r regression_lineaire$coefficients[1]`  
-  
-### tmin et densité de population  
+
+Oui la température maximale est liée à la température minimale selon l'équation : tmax \~ `r regression_lineaire$coefficients[2]` \* tmin + `r regression_lineaire$coefficients[1]`
+
+### tmin et densité de population
+
 ```{r}
 # représentation graphique  
 donnees_temperature |> 
@@ -121,9 +123,11 @@ donnees_temperature |>
   geom_point(alpha  = 0.2, size = 0.2) +
   theme_classic()
 ```
-Il n'y a pas de lien visible à cause des points extrêmes en densité mais aussi à cause de la variation des températures minimales toutes l'année.  
 
-## quali - quali  
+Il n'y a pas de lien visible à cause des points extrêmes en densité mais aussi à cause de la variation des températures minimales toutes l'année.
+
+## quali - quali
+
 ### tableau de contingence
 
 ```{r}
@@ -151,7 +155,7 @@ donnees_temperature_province |>
 
 ```
 
-### test du khi-deux  
+### test du khi-deux
 
 ```{r}
 table(donnees_temperature_province$region, donnees_temperature_province$densite_pop) |> 
@@ -159,6 +163,5 @@ table(donnees_temperature_province$region, donnees_temperature_province$densite_
   
 ```
 
-Les régions de province n'ont pas la même distribution de densité de population.  
-Au moins une des régions est différentes des autres.  
-
+Les régions de province n'ont pas la même distribution de densité de population.\
+Au moins une des régions est différentes des autres.

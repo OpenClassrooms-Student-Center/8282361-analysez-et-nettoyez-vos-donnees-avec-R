@@ -16,8 +16,6 @@ editor: visual
 
 ```{r}
 library(tidyverse)
-library(sf)
-library(leaflet)
 ```
 
 ## import des données
