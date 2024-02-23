@@ -9,18 +9,18 @@ format:
 editor: visual
 ---
 
-# import des packages  
-  
+# import des packages
+
 ```{r}
 library(tidyverse)
 ```
 
-# import des données  
-  
+# import des données
+
 ```{r}
 
 donnees_temperature <- read_csv(
-  "donnees_temperature.csv",
+  "data/donnees_temperature.csv",
   col_types = "ffdDdddfddff"
   )
 
@@ -32,7 +32,7 @@ donnees_temperature <- read_csv(
 glimpse(donnees_temperature)
 
 ```
-  
+
 # valeurs manquantes
 
 ```{r}
@@ -41,7 +41,8 @@ naniar::gg_miss_upset(donnees_temperature)
 
 ```
 
-# résumez les données sous forme de tableaux  
+# résumez les données sous forme de tableaux
+
 ```{r}
 summary(donnees_temperature)
 
@@ -81,8 +82,8 @@ donnees_temperature <- donnees_temperature |>
 
 count(donnees_temperature, departement, densite_pop)
 
-```  
-  
+```
+
 # remplacement des valeurs manquantes
 
 ## remplacement des longitudes
@@ -129,7 +130,6 @@ naniar::gg_miss_upset(donnees_temperature)
 
 ```
 
-
 ## remplacement des températures manquantes
 
 ### tmoy
@@ -175,10 +175,7 @@ summary(donnees_temperature)
 ```{r}
 write_csv(
   donnees_temperature, 
-  "donnees_temperature_completees.csv"
+  "data/donnees_temperature_completees.csv"
   )
 
 ```
-  
-
-

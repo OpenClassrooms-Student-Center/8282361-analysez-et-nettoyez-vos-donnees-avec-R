@@ -1,0 +1,297 @@
+---
+title: "Analyse descriptive bivariée"
+author: "Marie Vaugoyeau"
+date: "2024/02/11"
+format: 
+  pdf:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+editor: visual
+---
+
+# introduction
+
+## jeu de données
+
+Le jeu de données est disponible sur la page du cours d'OC.
+
+## import des packages
+
+```{r}
+library(multcomp)
+library(tidyverse)
+library(fmsb)
+library(sf)
+library(leaflet)
+```
+
+## import des données
+
+```{r}
+
+donnees_temperature <- read_csv(
+  "data/donnees_temperature_corrigees.csv",
+  col_types = c("fDfnnnfffnffnnn")
+  )
+
+# réordonne les modalités des variables département, region et code_insee_departement
+donnees_temperature <- donnees_temperature |> 
+  mutate(
+    departement = fct_relevel(donnees_temperature$departement, sort),
+    region = fct_relevel(donnees_temperature$region, sort),
+    code_insee_departement = fct_inseq(donnees_temperature$code_insee_departement)
+  )
+
+summary(donnees_temperature)
+```
+
+# analyse descriptive bivariée
+
+## quanti - quanti 
+### tmin et tmoy
+```{r}
+# représentation graphique  
+donnees_temperature |> 
+  ggplot() +
+  aes(x = tmoy, y = tmin) +
+  geom_point(alpha  = 0.2, size = 0.2) +
+  theme_classic()
+
+# calcul de l'équation linéaire
+regression_lineaire <- lm(tmin ~ tmoy, data = donnees_temperature)
+## coefficient
+regression_lineaire
+# validation du modèle (montré les résidus)
+summary(regression_lineaire)
+
+# visualisation graphique
+donnees_temperature |> 
+  ggplot() +
+  aes(x = tmoy, y = tmin) +
+  geom_point(alpha  = 0.2, size = 0.2) +
+  geom_abline(aes(slope = 0.86, intercept = -2.93), color = "red") +
+  theme_classic()
+
+# autre visualisation
+donnees_temperature |> 
+  ggplot() +
+  aes(x = tmoy, y = tmin) +
+  geom_point(alpha  = 0.2, size = 0.2) +
+  geom_smooth(method = "lm") +
+  geom_abline(aes(slope = 0.86, intercept = -2.93), color = "red") +
+  ggpubr::stat_regline_equation() +
+  theme_classic()
+
+```
+  
+### tmin et max  
+```{r}
+# représentation graphique  
+donnees_temperature |> 
+  ggplot() +
+  aes(x = tmin, y = tmax) +
+  geom_point(alpha  = 0.2, size = 0.2) +
+  theme_classic()
+
+# calcul de l'équation linéaire
+regression_lineaire <- lm(tmax ~ tmin, data = donnees_temperature)
+## coefficient
+regression_lineaire
+# validation du modèle (montré les résidus)
+summary(regression_lineaire)
+
+# autre visualisation
+donnees_temperature |> 
+  ggplot() +
+  aes(x = tmin, y = tmax) +
+  geom_point(alpha  = 0.2, size = 0.2) +
+  geom_smooth(method = "lm") +
+  ggpubr::stat_regline_equation() +
+  theme_classic()
+```
+Oui la température maximale est liée à la température minimale selon l'équation : tmax ~ `r regression_lineaire$coefficients[2]` * tmin + `r regression_lineaire$coefficients[1]`  
+  
+### tmin et densité de population  
+```{r}
+# représentation graphique  
+donnees_temperature |> 
+  ggplot() +
+  aes(x = tmin, y = densite_humaine_par_km_carre ) +
+  geom_point(alpha  = 0.2, size = 0.2) +
+  theme_classic()
+```
+Il n'y a pas de lien visible à cause des points extrêmes en densité mais aussi à cause de la variation des températures minimales toutes l'année.  
+
+## quali - quali  
+### tableau de contingence
+
+```{r}
+
+donnees_temperature_province <- donnees_temperature |> 
+  filter(region != "Île-de-France") |> 
+  droplevels()
+
+table(donnees_temperature_province$region, donnees_temperature_province$densite_pop, useNA = "ifany")
+
+count(donnees_temperature_province, region, densite_pop, .drop = FALSE)
+count(donnees_temperature_province, region, densite_pop)
+
+```
+
+### carte des points chauds
+
+```{r}
+donnees_temperature_province |> 
+  count(region, densite_pop) |> 
+  ggplot() +
+  aes(x = densite_pop, y = region, fill = n) +
+  geom_tile() +
+  theme_classic()
+
+```
+
+### test du khi-deux  
+
+```{r}
+table(donnees_temperature_province$region, donnees_temperature_province$densite_pop) |> 
+  chisq.test()
+  
+```
+
+Les régions de province n'ont pas la même distribution de densité de population.  
+Au moins une des régions est différentes des autres.  
+  
+## quanti - quali
+### tmin et densité de pop  
+#### représentation graphique
+
+```{r}
+donnees_temperature |> 
+  ggplot() +
+  aes(x = densite_pop, y = tmin, color = densite_pop) +
+  geom_boxplot() +
+  theme_classic()
+
+```
+
+### ANOVA
+
+```{r}
+bartlett.test(tmin ~ densite_pop, data = donnees_temperature)
+
+```
+
+```{r}
+anova <- aov(
+  tmin ~ densite_pop, data = donnees_temperature
+)
+
+summary(anova)
+
+
+# vérification de la normalité des résidus
+plot(anova)
+
+TukeyHSD(anova)
+
+tukey <- glht(anova, linfct = mcp(densite_pop = "Tukey"))
+summary(tukey, test = adjusted("holm"))
+
+# visualisation
+donnees_temperature |> 
+  ggplot() +
+  aes(x = densite_pop, y = tmin, color = densite_pop) +
+  geom_boxplot() +
+  geom_text(
+    aes(
+      y = 30,
+      label = cld(tukey)$mcletters$Letters),
+    data = cld(tukey)$mcletters$Letters |>
+      as.data.frame() |>
+      rownames_to_column(var = "densite_pop")
+  ) +
+  theme_classic()
+
+```
+
+### Kruskal-Wallis
+
+```{r}
+kruskal.test(
+  tmin ~ densite_pop, data = donnees_temperature
+)
+
+PMCMRplus::kwAllPairsNemenyiTest(
+  tmin ~ densite_pop, data = donnees_temperature
+)
+
+```
+
+### tmoy et densité de pop  
+#### représentation graphique
+
+```{r}
+donnees_temperature |> 
+  ggplot() +
+  aes(x = densite_pop, y = tmoy, color = densite_pop) +
+  geom_boxplot() +
+  theme_classic()
+
+```
+
+### ANOVA
+
+```{r}
+bartlett.test(tmoy ~ densite_pop, data = donnees_temperature)
+
+```
+Les variances ne sont pas similaires donc on ne peut pas réaliser d'ANOVA  
+  
+### Kruskal-Wallis
+
+```{r}
+kruskal.test(
+  tmoy ~ densite_pop, data = donnees_temperature
+)
+
+PMCMRplus::kwAllPairsNemenyiTest(
+  tmoy ~ densite_pop, data = donnees_temperature
+)
+
+```
+Les températures minimales sont similaires entre les zones peu peuplé et très peuplé, ces températures sont inférieurs aux températures mesurées dans les zones peuplé et sur-peuplé, qui sont similaires entre elles.  
+  
+### tmax et densité de pop  
+#### représentation graphique  
+
+```{r}
+donnees_temperature |> 
+  ggplot() +
+  geom_jitter(alpha = 0.2, size = 0.2) +
+  aes(x = densite_pop, y = tmax, color = densite_pop) +
+  theme_classic()
+
+```
+
+### ANOVA
+
+```{r}
+bartlett.test(tmax ~ densite_pop, data = donnees_temperature)
+
+```
+Pas non plus d'ANOVA autorisez ici car les variances ne sont pas identiques.  
+  
+### Kruskal-Wallis
+
+```{r}
+kruskal.test(
+  tmax ~ densite_pop, data = donnees_temperature
+)
+
+PMCMRplus::kwAllPairsNemenyiTest(
+  tmax ~ densite_pop, data = donnees_temperature
+)
+```  
+  
+Les températures max enregistrées en zone peu peuplé sont significativement plus haute que celle enregistrées dans toutes les autres zones. Les températures enregistré en zones sur-peuplé sont similaires à celles enregistrées en zone peuplé et très peuplé. Les températures sont significativement plus haute en zone peuplé que qu'en zone très peuplé.   

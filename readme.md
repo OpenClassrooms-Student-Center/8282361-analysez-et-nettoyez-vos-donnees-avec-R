@@ -38,5 +38,18 @@ Script Quarto corrigé du `A vous de jouez` [`07_analyse_descriptive_univariee_s
 Données corrigées disponible dans le dossier `data` sous le nom  [`donnees_temperature_corrigees.csv`](data/donnees_temperature_corrigees.csv)  
 
 
+## Partie 3 - Conduisez une analyse bivariée  
+### P3C1 - Identifiez le lien entre deux variables quantitatives  
+Le script Quarto corrigé est disponible sous le nom [`08_analyse_descriptive_bivariee_quanti.qmd`](08_analyse_descriptive_bivariee_quanti.qmd)  
+  
+### P3C2 - Recherchez une différence entre les sous-groupes  
+Le script Quarto corrigé est sous le nom [`09_analyse_descriptive_bivariee_quali.qmd`](09_analyse_descriptive_bivariee_quali.qmd)   
+  
+### P3C3 - Évaluez l'impact de la variable qualitative sur la variable quantitative  
+Le script Quarto corrigé est disponible sous le nom [`10_analyse_descriptive_bivariee_quali_quanti.qmd`](10_analyse_descriptive_bivariee_quali_quanti.qmd)  
+  
+### P3C4 - Menez une analyse de variation spatio-temporelle  
+Le script Quarto corrigé est disponible sous le nom [`11_analyse_descriptive_bivariee_spatio_temp.qmd`](11_analyse_descriptive_bivariee_spatio_temp.qmd)  
+
 
 

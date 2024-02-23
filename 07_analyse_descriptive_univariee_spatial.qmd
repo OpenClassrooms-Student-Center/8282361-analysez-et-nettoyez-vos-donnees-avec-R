@@ -10,15 +10,18 @@ format:
 editor: visual
 ---
 
-# introduction  
-## import des packages  
+# introduction
+
+## import des packages
+
 ```{r}
 library(tidyverse)
 library(sf)
 library(leaflet)
 ```
 
-## import des données 
+## import des données
+
 ```{r}
 
 donnees_temperature <- read_csv(
@@ -30,7 +33,9 @@ summary(donnees_temperature)
 ```
 
 # analyse descriptive univariée
-## variables quantitatives  
+
+## variables quantitatives
+
 #### une par une
 
 ```{r}
@@ -144,11 +149,12 @@ donnees_temperature |>
 
 ```
 
+## variables qualitatives
 
-## variables qualitatives  
-### analyse univariée qualitative  
-#### vérification de l'unicité des modalités  
-  
+### analyse univariée qualitative
+
+#### vérification de l'unicité des modalités
+
 ```{r}
 # visualiser la table  
 donnees_temperature |> 
@@ -277,8 +283,9 @@ donnees_temperature |>
   theme_void() 
 
 ```
-  
-## variables temporelles    
+
+## variables temporelles
+
 #### Création des colonnes `mois` et `annee`
 
 ```{r}
@@ -306,8 +313,8 @@ donnees_temperature |>
 
 ```
 
+## variables spatiales
 
-## variables spatiales  
 ### correction des données géographiques
 
 ```{r}
@@ -361,7 +368,7 @@ donnees_temperature_corr <-
   )
 ```
 
-### analyse univariée spatiale  
+### analyse univariée spatiale
 
 ```{r}
 # Vérification que les couples de coordonnées sont uniques pour un chef-lieu
@@ -423,12 +430,12 @@ ggplot(departement) +
 
 ```
 
-### enregistrement des données corrigés  
+### enregistrement des données corrigés
+
 ```{r}
 write_csv(
   donnees_temperature_corr,
-  "donnees_temperature_corrigees.csv"
+  "data/donnees_temperature_corrigees.csv"
 )
 
 ```
-

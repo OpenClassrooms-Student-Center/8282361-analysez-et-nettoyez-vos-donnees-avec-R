@@ -9,18 +9,18 @@ format:
 editor: visual
 ---
 
-# import des packages  
-  
+# import des packages
+
 ```{r}
 library(tidyverse)
 ```
 
-# import des données  
-  
+# import des données
+
 ```{r}
 
 donnees_temperature <- read_csv(
-  "donnees_temperature.csv",
+  "data/donnees_temperature.csv",
   col_types = "ffdDdddfddff"
   )
 
@@ -32,7 +32,7 @@ donnees_temperature <- read_csv(
 glimpse(donnees_temperature)
 
 ```
-  
+
 # valeurs manquantes
 
 ```{r}
@@ -40,5 +40,3 @@ glimpse(donnees_temperature)
 naniar::gg_miss_upset(donnees_temperature)
 
 ```
-
-
